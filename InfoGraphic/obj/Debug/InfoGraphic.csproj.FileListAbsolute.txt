@@ -1,0 +1,7 @@
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\bin\Debug\InfoGraphic.exe.config
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\bin\Debug\InfoGraphic.exe
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\bin\Debug\InfoGraphic.pdb
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\obj\Debug\InfoGraphic.csprojResolveAssemblyReference.cache
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\obj\Debug\InfoGraphic.csproj.CoreCompileInputs.cache
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\obj\Debug\InfoGraphic.exe
+c:\users\777\source\repos\InfoGraphic\InfoGraphic\obj\Debug\InfoGraphic.pdb
