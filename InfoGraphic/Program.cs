@@ -7,16 +7,78 @@ using System.Threading.Tasks;
 
 namespace InfoGraphic
 {
-    class Program
+    class Parsing
     {
+        //Преобразовывает .тхт в список строк с датой в начале
+        public LinkedList<string> toLineList(string path)
+        {
+            string line, date = "";
+            LinkedList<string> lines = new LinkedList<string>();
+            StreamReader sr = new StreamReader(path);
+            
+            while ((line = sr.ReadLine()) != null)
+            {
+                //Форматируем время
+                if (line.Contains("War Correspondent#4734"))
+                {
+                    line = line.Substring(line.IndexOf("["));
+                    line = line.Substring(0, line.IndexOf("]") + 1);
+                    date = line;
+                }
+                else
+                {
+                    line = date + line;
+
+                    if(line.Length!=16)
+                    lines.AddLast(line);
+                }
+                
+            }
+            return lines;
+        }
+
+        //Удаляет лишние строки из списка
+        public LinkedList<string> removeTrash(LinkedList<string> inputlines)
+        {
+            LinkedList<string> lines = new LinkedList<string>();
+            foreach (string s in inputlines)
+            {
+                if(!(s.Contains("a town") ||s.Contains("so far")||s.Contains("Lobby Islands")||s.Contains("weekly war has started"))){
+                    lines.AddLast(s);
+                }
+            }
+                return lines;
+        }
+
+        public LinkedList<string> removeTownCaptures(LinkedList<string> inputlines)
+        {
+            LinkedList<string> lines = new LinkedList<string>();
+            foreach (string s in inputlines)
+            {
+                if (!(s.Contains("have lost") || s.Contains("have taken")))
+                {
+                    lines.AddLast(s);
+                }
+            }
+            return lines;
+        }
+
+
+        public int hueta()
+        {
+            return 1;
+        }
+    }
+    class Program
+    {   
         static void Main(string[] args)
         {
-            String line, previousline;
+            Parsing p = new Parsing();
             String path = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/source.txt";
             String newpath = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/";
             String dateformat = "[dd.MM.yy;HH:mm]";
             int linecounter = 0;
-            LinkedList<List<string>> lines = new LinkedList< List <string>> ();
+            
             //int l = File.ReadLines(@path).Count();
             //Console.WriteLine(l);
 
@@ -24,60 +86,38 @@ namespace InfoGraphic
             Console.WriteLine("Куда пишем?");
             newpath=newpath+Console.ReadLine()+".txt";
             Console.WriteLine(newpath);
-
             //блок обработки файла
-            //Создаем двумерный список, где одна строка - одна временная метка, столбики - сервера
-            StreamReader sr = new StreamReader(path);
-            List<string> messages = new List<string>();
-            while ((line = sr.ReadLine()) != null)
-            {
-                //Убираем сообщения о взятии городов
-                if (!(line.Contains("lost")||line.Contains("taken")))
-                {
-                    //Форматируем время
-                    if (line.Contains("War Correspondent#4734"))
-                    {
-                        line = line.Substring(line.IndexOf("["));
-                        line = line.Substring(0, line.IndexOf("]") + 1);
-                        /*line = line.Replace('-', '.');
-                        line = line.Replace("янв", "01").Replace("фев", "02").Replace("мар", "03");
-                        line = line.Replace("апр", "04").Replace("май", "05").Replace("июн", "06");
-                        line = line.Replace("июл", "07").Replace("авг", "08").Replace("сен", "09");
-                        line = line.Replace("окт", "10").Replace("ноя", "11").Replace("дек", "12");*/
-
-                        //Если временная метка не пустая то заносим инфу по ней в основной список
-                        if(messages.Count>0)
-                        {
-                            lines.AddLast(messages);
-                        }
-                        messages.Clear();
-                        messages.Add(line); //забиваем время в качестве первого элемента списка
-                    }
-
-                    //Общее количество потерь
-                    if (line.Contains("casualties")&&(!line.Contains("Lobby")))
-                    {
-                        messages.Add(line);//забиваем потери как элемент списка
-                    }
-
-
-                    //  lines.Add(line.Split(']')[0]);
-                    linecounter++;
-                    previousline = line;
-                }
+            /*Создаем список массивов
+             1 - дата
+             2 - сервер
+             3 - карта
+             4 - потери колонистов
+             5 - потери варденов
+             */
                 
-            }
+            
+            LinkedList<string> lines = new LinkedList<string>();
+            //lines.CopyTo(Firstformat(path));
 
+            lines = p.toLineList(path);
+            lines = p.removeTrash(lines);
+            lines = p.removeTownCaptures(lines);
             //блок записи файла
             TextWriter tw = new StreamWriter(newpath);
-            foreach (List<string> s in lines)
-                foreach(string n in s)
-                 tw.WriteLine(n);
+            foreach (string s in lines)
+            {
+                tw.WriteLine(s);
+                linecounter++;
+               
+            }
+            tw.WriteLine("Всего строк в файле:" + linecounter);
             tw.Close();
 
             //Вывод количества строк
             Console.WriteLine("Всего строк в файле:"+linecounter);
             Console.ReadLine();
         }
+
+       
     }
 }
