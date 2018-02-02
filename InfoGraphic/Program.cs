@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -43,13 +44,17 @@ namespace InfoGraphic
             LinkedList<string> lines = new LinkedList<string>();
             foreach (string s in inputlines)
             {
-                if(!(s.Contains("a town") ||s.Contains("so far")||s.Contains("Lobby Islands")||s.Contains("weekly war has started"))){
+                if(!(s.Contains("a town") || s.Contains("outpost has") || s.Contains("so far")
+                    || s.Contains("Internal") || s.Contains("192.168")
+                    || s.Contains("Lobby Islands")||s.Contains("weekly war has started") || s.Contains("Development"))){
                     lines.AddLast(s);
                 }
             }
                 return lines;
         }
 
+
+        //Удаляет захват/потерю городов (40к+ строк!)
         public LinkedList<string> removeTownCaptures(LinkedList<string> inputlines)
         {
             LinkedList<string> lines = new LinkedList<string>();
@@ -63,11 +68,46 @@ namespace InfoGraphic
             return lines;
         }
 
-
-        public int hueta()
+        //Форматирование сообщений о потерях
+        public LinkedList<string> formatCasualties(LinkedList<string> inputlines)
         {
-            return 1;
+            LinkedList<string> lines = new LinkedList<string>();
+            foreach (string s in inputlines)
+            {
+                string line = s;
+                if (line.Contains(" - "))
+                {
+                    line = line.Replace(" - ", ";");
+                  
+                }
+                if (line.Contains("(Weekly War)"))
+                {
+                    line = line.Replace("(Weekly War)", "");
+
+                }
+                if (line.Contains("Day"))
+                {
+                    line = line.Replace("Day /d+", "");
+
+                }
+                if (line.Contains("casualties have reached"))
+                {
+                    line = line.Replace(" casualties have reached ", ";");
+                    lines.AddLast(line);
+                }
+                else
+                if (line.Contains("total enlistments"))
+                {
+                    line = line.Replace(" total enlistments,", ";");
+                    line = line.Replace(" casualties,", ";").Replace(" casualties.", ";");
+                    lines.AddLast(line);
+                }
+                else
+                    lines.AddLast(line);
+            }
+            return lines;
         }
+
     }
     class Program
     {   
@@ -77,12 +117,15 @@ namespace InfoGraphic
             String path = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/source.txt";
             String newpath = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/";
             String dateformat = "[dd.MM.yy;HH:mm]";
+            DateTime date;
+            CultureInfo provider = CultureInfo.InvariantCulture;
+
+
             int linecounter = 0;
-            
-            //int l = File.ReadLines(@path).Count();
-            //Console.WriteLine(l);
 
             //блок названия файла
+            date = DateTime.ParseExact("[04.03.17;20:30]", dateformat, provider);
+            Console.WriteLine(date.ToString());
             Console.WriteLine("Куда пишем?");
             newpath=newpath+Console.ReadLine()+".txt";
             Console.WriteLine(newpath);
@@ -93,15 +136,26 @@ namespace InfoGraphic
              3 - карта
              4 - потери колонистов
              5 - потери варденов
+             Формат образца конец 2016: [20.10.16;02:53][Development] Day 1, 1:54 Hours: **Colonial** casualties have reached 1.
+             Потери сторон отдельно, карта не указана
+             
+             Формат образца начало 2017: [20.02.17;12:30][Fox3 - Deadlands (Weekly War)] **Warden** casualties have reached 12,651.
+             Потери сторон отдельно, карта указана
+
+             Современный формат (с марта '17): [17.03.17;17:12][Fox1 - Deadlands - Day 2] 133 total enlistments, 9 Colonial casualties, 4 Warden casualties.
+             Потери сторон вместе, карта указана
              */
-                
-            
+
+
             LinkedList<string> lines = new LinkedList<string>();
             //lines.CopyTo(Firstformat(path));
-
+            //Форматируем строки и убираем мусор
             lines = p.toLineList(path);
             lines = p.removeTrash(lines);
             lines = p.removeTownCaptures(lines);
+            lines = p.formatCasualties(lines);
+
+
             //блок записи файла
             TextWriter tw = new StreamWriter(newpath);
             foreach (string s in lines)
@@ -112,7 +166,7 @@ namespace InfoGraphic
             }
             tw.WriteLine("Всего строк в файле:" + linecounter);
             tw.Close();
-
+            
             //Вывод количества строк
             Console.WriteLine("Всего строк в файле:"+linecounter);
             Console.ReadLine();
