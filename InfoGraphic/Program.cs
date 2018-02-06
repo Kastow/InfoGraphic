@@ -379,27 +379,43 @@ namespace InfoGraphic
                 messagelist.Add(buffer);
             }
 
-            /*
-            Console.WriteLine("Time:"+p.GetTime(lines.ElementAt(200)));
-            Console.WriteLine("Server:"+p.getServer(lines.ElementAt(200)));
-            Console.WriteLine("Map:"+p.getMap(lines.ElementAt(200)));
-            Console.WriteLine("Colonial casualties:"+p.getColonials(lines.ElementAt(200)));
-            Console.WriteLine("Warden casualties:" + p.getWardens(lines.ElementAt(200)));
-            */
-            //блок записи файла
-            /* TextWriter tw = new StreamWriter(newpath);
-             foreach (string s in lines)
-             {
-                 p.GetTime(s);
-                 tw.WriteLine(s);
-                 linecounter++;
+            lines = p.firstFormat(path2);
+            //Вводим сообщения из нового формата
+            for (int i = 0; i < lines.Count; i++)
+            {
+                message buffer = new message();
+                string s = lines.ElementAt(i);
+                buffer.date = p.GetTime(s);
+                buffer.servername = p.getServer(s);
+                buffer.mapname = p.getMap(s);
+                buffer.ccas = p.getColonials(s);
+                buffer.wcas = p.getWardens(s);
+                buffer.victory = p.getVictory(s);
+                messagelist.Add(buffer);
+            }
 
-             }
-             tw.WriteLine("Всего строк в файле:" + linecounter);
-             tw.Close();
-             */
-            //Вывод количества строк
-            Console.WriteLine("Всего строк в файле:"+linecounter);
+
+                /*
+                Console.WriteLine("Time:"+p.GetTime(lines.ElementAt(200)));
+                Console.WriteLine("Server:"+p.getServer(lines.ElementAt(200)));
+                Console.WriteLine("Map:"+p.getMap(lines.ElementAt(200)));
+                Console.WriteLine("Colonial casualties:"+p.getColonials(lines.ElementAt(200)));
+                Console.WriteLine("Warden casualties:" + p.getWardens(lines.ElementAt(200)));
+                */
+                //блок записи файла
+                /* TextWriter tw = new StreamWriter(newpath);
+                 foreach (string s in lines)
+                 {
+                     p.GetTime(s);
+                     tw.WriteLine(s);
+                     linecounter++;
+
+                 }
+                 tw.WriteLine("Всего строк в файле:" + linecounter);
+                 tw.Close();
+                 */
+                //Вывод количества строк
+                Console.WriteLine("Всего строк в файле:"+linecounter);
             Console.ReadLine();
         }
 
