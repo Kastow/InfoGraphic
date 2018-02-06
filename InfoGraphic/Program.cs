@@ -11,13 +11,35 @@ namespace InfoGraphic
 {
     class battle
     {
-        public LinkedList<message> messagelist;
+        public List<message> messagelist;
         public string map, servername;
         public int wloss, closs;
         public int victor;
-        public TimeSpan length;
+        public int length;
         public DateTime start;
         public DateTime end;
+        //выводит карту
+        public string getmap()
+        {
+            return messagelist.ElementAt(0).mapname;
+
+        }
+        //выводит имя сервера
+        public string getserver()
+        {
+            return messagelist.ElementAt(0).servername;
+        }
+        //выводит победителя
+        public int getvictor()
+        {
+            return messagelist.Last().victory;
+
+        }
+        //выводит длину карты
+        public int getSpan()
+        {
+            return (messagelist.Last().date-messagelist.ElementAt(0).date).Hours+1;
+        }
     }
     class message
     {
@@ -29,8 +51,16 @@ namespace InfoGraphic
     }
     class Parsing
     {
-        
-
+        //форматирует сырой текст в то что надо
+        public List<string> firstFormat(string path)
+        {
+            List<string> lines = new List<string>();
+            lines = toLineList(path);
+            lines = removeTrash(lines);
+            lines = removeTownCaptures(lines);
+            lines = formatCasualties(lines);
+            return lines;
+        }
         //преобразовывает первые 16 символов в переменную времени
         public DateTime GetTime(string dateString)
         {
@@ -97,11 +127,50 @@ namespace InfoGraphic
             }
             return 0;
         }
+        //Смотрит кто победил (если сообщение о победе), 1 - колонисты, 2 - вардены, 3 - ничья
+        public int getVictory(string message)
+        {
+            if(message.Contains("surrendered"))
+            {
+                if (message.Contains("Colonials"))
+                    return 2;
+                if (message.Contains("Wardens"))
+                    return 1;
+            }
+            if (message.Contains("stalemate"))
+                return 3;
+            if(message.Contains("defeated"))
+            {
+                if (message.Contains("**Colonials**"))
+                    return 1;
+                if (message.Contains("**Wardens**"))
+                    return 2;
+            }
+            return 0;
+        }
+        //смотрит, новая ли карта или старая
+        public bool newBattle(message input, List<battle> battles)
+        {
+            if (battles.Count < 25) {
+                foreach (battle game in battles)
+                {
+                    if ((input.servername == game.servername) &&(input.mapname==game.map))
+                    {
+                        
+                    }
+                }
+            }
+            if (battles.Count > 25)
+            {
+
+            }
+                return false;
+        }
         //Преобразовывает .тхт в список строк с датой в начале
-        public LinkedList<string> toLineList(string path)
+        public List<string> toLineList(string path)
         {
             string line, date = "";
-            LinkedList<string> lines = new LinkedList<string>();
+            List<string> lines = new List<string>();
             StreamReader sr = new StreamReader(path);
             
             while ((line = sr.ReadLine()) != null)
@@ -118,7 +187,7 @@ namespace InfoGraphic
                     line = date + line;
 
                     if(line.Length!=16)
-                    lines.AddLast(line);
+                    lines.Add(line);
                 }
                 
             }
@@ -126,10 +195,10 @@ namespace InfoGraphic
         }
 
         //Удаляет лишние строки из списка
-        public LinkedList<string> removeTrash(LinkedList<string> inputlines)
+        public List<string> removeTrash(List<string> inputlines)
         {
             string line = "";
-            LinkedList<string> lines = new LinkedList<string>();
+            List<string> lines = new List<string>();
             foreach (string s in inputlines)
             {
                 
@@ -138,7 +207,7 @@ namespace InfoGraphic
                     || s.Contains("Lobby Islands")||s.Contains("weekly war has started") || s.Contains("Development"))){
                     line = s;
                     //line = Regex.Replace(line, "Day \d+, \d+:\d+ Hours:",);
-                    lines.AddLast(s);
+                    lines.Add(s);
                 }
             }
                 return lines;
@@ -146,23 +215,23 @@ namespace InfoGraphic
 
 
         //Удаляет захват/потерю городов (40к+ строк!)
-        public LinkedList<string> removeTownCaptures(LinkedList<string> inputlines)
+        public List<string> removeTownCaptures(List<string> inputlines)
         {
-            LinkedList<string> lines = new LinkedList<string>();
+            List<string> lines = new List<string>();
             foreach (string s in inputlines)
             {
                 if (!(s.Contains("have lost") || s.Contains("have taken")))
                 {
-                    lines.AddLast(s);
+                    lines.Add(s);
                 }
             }
             return lines;
         }
 
         //Форматирование сообщений о потерях
-        public LinkedList<string> formatCasualties(LinkedList<string> inputlines)
+        public List<string> formatCasualties(List<string> inputlines)
         {
-            LinkedList<string> lines = new LinkedList<string>();
+            List<string> lines = new List<string>();
             foreach (string s in inputlines)
             {
                 string line = s;
@@ -189,17 +258,17 @@ namespace InfoGraphic
                 if (line.Contains("casualties have reached"))
                 {
                     line = line.Replace(" casualties have reached ", ";");
-                    lines.AddLast(line);
+                    lines.Add(line);
                 }
                 else
                 if (line.Contains("total enlistments"))
                 {
                     line = line.Replace(" total enlistments,", ";");
                     line = line.Replace(" casualties,", ";").Replace(" casualties.", ";");
-                    lines.AddLast(line);
+                    lines.Add(line);
                 }
                 else
-                    lines.AddLast(line);
+                    lines.Add(line);
             }
             return lines;
         }
@@ -210,73 +279,113 @@ namespace InfoGraphic
         static void Main(string[] args)
         {
             Parsing p = new Parsing();
-            LinkedList<string> lines = new LinkedList<string>();
+            List<string> lines = new List<string>();
+            List<message> messagelist = new List<message>();
             String path1 = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/logs/oldlogs.txt";
-            String path2 = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/newlogs";
-            
+            String path2 = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/logs/newlogs.txt";
+            List<battle> battles = new List<battle>();
             DateTime date;
             CultureInfo provider = CultureInfo.InvariantCulture;
-
-
             int linecounter = 0;
-
-      
-            //Console.WriteLine(date.ToString());
-
-
+            /*
             //блок названия файла
             Console.WriteLine("Куда пишем?");
             newpath=newpath+Console.ReadLine()+".txt";
             Console.WriteLine(newpath);
-            //блок обработки файла
-            /*Создаем список массивов
-             1 - дата
-             2 - сервер
-             3 - карта
-             4 - потери колонистов
-             5 - потери варденов
-             Формат образца конец 2016: [20.10.16;02:53][Development] Day 1, 1:54 Hours: **Colonial** casualties have reached 1.
-             Потери сторон отдельно, карта не указана
-             29.11.16 - Deadlands
-             06.12.16 - Upper Heartlands
-             10.12.16 - Upper Heartlands
-             17.12.16 - Deadlands 
-             20.12.16 - Callahan's Passage
-             24.12.16 - Callahan's Passage
-             28.12.16 - Deadlands
-             31.12.16 - Upper Heartlands
-             07.01.17 - Callahan's Passage
-             14.01.17 - Deadlands
-             21.01.17 - F1 Upper Heartlands, F2 Callahan's Passage
-             28.01.17 - F1 Callahan's Passage, F2 Deadlands
-             04.02.17 - Upper Heartlands, Endless Shore
+            */
 
 
-
+             /*
              Формат образца начало 2017: [20.02.17;12:30][Fox3 - Deadlands (Weekly War)] **Warden** casualties have reached 12,651.
              Потери сторон отдельно, карта указана
 
              Современный формат (с марта '17): [17.03.17;17:12][Fox1 - Deadlands - Day 2] 133 total enlistments, 9 Colonial casualties, 4 Warden casualties.
              Потери сторон вместе, карта указана
              */
-             
 
-            
-            //lines.CopyTo(Firstformat(path));
 
+           
             //Форматируем строки и убираем мусор
-            lines = p.toLineList(path);
-            lines = p.removeTrash(lines);
-            lines = p.removeTownCaptures(lines);
-            lines = p.formatCasualties(lines);
+            lines = p.firstFormat(path1);
+            //Объединяем потери в старом формате
+            for(int i=0; i<lines.Count;i++)
+            {
+                message buffer = new message();
+                string s = lines.ElementAt(i);
 
+                buffer.date = p.GetTime(s);
+                buffer.servername = p.getServer(s);
+                buffer.mapname = p.getMap(s);
+                buffer.ccas = p.getColonials(s);
+                buffer.wcas = p.getWardens(s);
+                buffer.victory = p.getVictory(s);
+                if (buffer.victory == 0)
+                {
+                    if ((i + 30) < lines.Count)
+                    {
+                        for (int n = 1; n < 30; n++)
+                        {
+                            string compare = lines.ElementAt(i + n);
+                            if (s.Contains("Colonial") && (compare.Contains("Warden")))
+                            {
+                                if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
+                                {
+                                    buffer.wcas = p.getWardens(compare);
+                                    lines.RemoveAt(i + n);
+                                    break;
+                                }
+                            }
+                            else
+                            if (compare.Contains("Colonial") && (s.Contains("Warden")))
+                            {
+                                if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
+                                {
+                                    buffer.ccas = p.getColonials(compare);
+                                    lines.RemoveAt(i + n);
+                                    break;
+                                }
+                            }
 
+                        }
+                    }
+                    else
+                    {
+                        for (int n = i; n < lines.Count; n++)
+                        {
+                            string compare = lines.ElementAt(n);
+                            if (s.Contains("Colonial") && (compare.Contains("Warden")))
+                            {
+                                if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
+                                {
+                                    buffer.wcas = p.getWardens(compare);
+                                    lines.RemoveAt(n);
+                                    break;
+                                }
+                            }
+                            else
+                            if (compare.Contains("Colonial") && (s.Contains("Warden")))
+                            {
+                                if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
+                                {
+                                    buffer.ccas = p.getColonials(compare);
+                                    lines.RemoveAt(n);
+                                    break;
+                                }
+                            }
 
+                        }
+                    }
+                }
+                messagelist.Add(buffer);
+            }
+
+            /*
             Console.WriteLine("Time:"+p.GetTime(lines.ElementAt(200)));
             Console.WriteLine("Server:"+p.getServer(lines.ElementAt(200)));
             Console.WriteLine("Map:"+p.getMap(lines.ElementAt(200)));
             Console.WriteLine("Colonial casualties:"+p.getColonials(lines.ElementAt(200)));
             Console.WriteLine("Warden casualties:" + p.getWardens(lines.ElementAt(200)));
+            */
             //блок записи файла
             /* TextWriter tw = new StreamWriter(newpath);
              foreach (string s in lines)
