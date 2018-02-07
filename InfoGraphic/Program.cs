@@ -11,13 +11,18 @@ namespace InfoGraphic
 {
     class battle
     {
-        public List<message> messagelist;
+        public List<message> messagelist = new List<message>();
         public string map, servername;
-        public int wloss, closs;
-        public int victor;
+        public int wloss=0, closs=0;
+        public int victor = 0;
         public int length;
         public DateTime start;
         public DateTime end;
+        public battle()
+        {
+          
+
+        }
         //выводит карту
         public string getmap()
         {
@@ -38,7 +43,15 @@ namespace InfoGraphic
         //выводит длину карты
         public int getSpan()
         {
-            return (messagelist.Last().date-messagelist.ElementAt(0).date).Hours+1;
+            return (messagelist.Last().date - messagelist.ElementAt(0).date).Hours + 1;
+        }
+        public DateTime getStart()
+        {
+            return messagelist.ElementAt(0).date.AddHours(-1);
+        }
+        public DateTime getEnd()
+        {
+            return messagelist.Last().date;
         }
     }
     class message
@@ -149,23 +162,9 @@ namespace InfoGraphic
             return 0;
         }
         //смотрит, новая ли карта или старая
-        public bool newBattle(message input, List<battle> battles)
-        {
-            if (battles.Count < 25) {
-                foreach (battle game in battles)
-                {
-                    if ((input.servername == game.servername) &&(input.mapname==game.map))
-                    {
-                        
-                    }
-                }
-            }
-            if (battles.Count > 25)
-            {
-
-            }
-                return false;
-        }
+       // public bool newBattle(message input, List<battle> battles)
+        //{
+        //}
         //Преобразовывает .тхт в список строк с датой в начале
         public List<string> toLineList(string path)
         {
@@ -292,19 +291,7 @@ namespace InfoGraphic
             Console.WriteLine("Куда пишем?");
             newpath=newpath+Console.ReadLine()+".txt";
             Console.WriteLine(newpath);
-            */
-
-
-             /*
-             Формат образца начало 2017: [20.02.17;12:30][Fox3 - Deadlands (Weekly War)] **Warden** casualties have reached 12,651.
-             Потери сторон отдельно, карта указана
-
-             Современный формат (с марта '17): [17.03.17;17:12][Fox1 - Deadlands - Day 2] 133 total enlistments, 9 Colonial casualties, 4 Warden casualties.
-             Потери сторон вместе, карта указана
-             */
-
-
-           
+            */     
             //Форматируем строки и убираем мусор
             lines = p.firstFormat(path1);
             //Объединяем потери в старом формате
@@ -394,7 +381,102 @@ namespace InfoGraphic
                 messagelist.Add(buffer);
             }
 
+            //делит все сообщения по играм
+            for(int i=0;i<messagelist.Count;i++)
+            {
+                message buffer = messagelist.ElementAt(i); //загоняем в буфер сообщение из листа
+                bool newbattle = true;
+                if ((battles.Count < 100)&&(battles.Count>0)) //для первых битв можно и прогнать через все битвы
+                {
+                for(int k=battles.Count-1;k>=0;k--)
+                    {
+                        battle compare = battles.ElementAt(k);
+                        //если совпадает имя, карта, и потерь меньше или это победное сообщение, добавляем сообщение в конец списка
+                        if ((buffer.servername == compare.servername) && (buffer.mapname == compare.map)
+                            && (compare.messagelist.Last().victory==0) && (((compare.messagelist.Last().wcas <= buffer.wcas)
+                            && (compare.messagelist.Last().ccas <= buffer.ccas))||(buffer.victory!=0)))
+                        {
+                            battles.ElementAt(k).messagelist.Add(buffer);
+                            
+                            newbattle = false;
+                            if (buffer.victory != 0)
+                            {
+                                battles.ElementAt(k).victor = buffer.victory;
+                                battles.ElementAt(k).length = battles.ElementAt(k).getSpan();
+                                battles.ElementAt(k).end = battles.ElementAt(k).getEnd();
+                            }
+                            else
+                            {
+                                battles.ElementAt(k).wloss = buffer.wcas;
+                                battles.ElementAt(k).closs = buffer.ccas;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (battles.Count > 100) //если битв больше чем 60 то прогоняем только через последние 60 битв
+                {
+                    for (int k = battles.Count - 1; k >= battles.Count - 101; k--)
+                    {
+                        battle compare = battles.ElementAt(k);
+                        //если совпадает имя, карта, и потерь меньше или это победное сообщение, добавляем сообщение в конец списка
+                        if ((buffer.servername == compare.servername) && (buffer.mapname == compare.map)
+                            && (compare.messagelist.Last().victory == 0) && (((compare.messagelist.Last().wcas <= buffer.wcas)
+                            && (compare.messagelist.Last().ccas <= buffer.ccas)) || (buffer.victory != 0)))
+                        {
+                           
+                            battles.ElementAt(k).messagelist.Add(buffer);
+                            newbattle = false;
+                            if(buffer.victory!=0)   //если в сообщении говорится что кто-то победил,                                                     
+                            {                       //присваиваем эту победу объекту битвы
+                                battles.ElementAt(k).victor = buffer.victory;
+                                battles.ElementAt(k).length = battles.ElementAt(k).getSpan();
+                                battles.ElementAt(k).end = battles.ElementAt(k).getEnd();
+                            }
+                            else
+                            {
+                                battles.ElementAt(k).wloss = buffer.wcas;
+                                battles.ElementAt(k).closs = buffer.ccas;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if ((newbattle == true)&&(buffer.victory==0))
+                {
+                    //если не нашли битву по карте и серверу
+                    battle bufferbattle = new battle();
+                    bufferbattle.map = buffer.mapname;
+                    bufferbattle.servername = buffer.servername;
+                    bufferbattle.messagelist.Add(buffer);
+                    bufferbattle.start = bufferbattle.getStart();
+                    battles.Add(bufferbattle);
+                }
+            }
+            for (int i = 0; i < battles.Count; i++)
+            {
+                if((battles.ElementAt(i).messagelist.Count==1)&&(battles.ElementAt(i).messagelist.ElementAt(0).victory==0)) //если об игре всего одно сообщение, нахуй оно нам надо?
+                { 
+                    battles.RemoveAt(i);
+                    i--;
+                    continue;
+                }else
+                //на некоторых серверах корреспондент забаговывался и выводил потери уже после победы
+                if((battles.ElementAt(i).messagelist.First().ccas== battles.ElementAt(i).messagelist.Last().ccas)
+                    && battles.ElementAt(i).victor==0)
+                    {
+                    battles.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+                if (battles.ElementAt(i).victor == 0)
+                {
+                    
+                    linecounter++;
+                    Console.WriteLine(i+" "+battles.ElementAt(i).servername+"; "+ battles.ElementAt(i).map);
+                }
 
+            }
                 /*
                 Console.WriteLine("Time:"+p.GetTime(lines.ElementAt(200)));
                 Console.WriteLine("Server:"+p.getServer(lines.ElementAt(200)));
@@ -415,7 +497,7 @@ namespace InfoGraphic
                  tw.Close();
                  */
                 //Вывод количества строк
-                Console.WriteLine("Всего строк в файле:"+linecounter);
+                Console.WriteLine("Проблемные игры:"+linecounter);
             Console.ReadLine();
         }
 
