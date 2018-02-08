@@ -37,13 +37,29 @@ namespace InfoGraphic
         //выводит победителя
         public int getvictor()
         {
-            return messagelist.Last().victory;
+            
+            if(messagelist.Last().victory!=0)
+            {
+                return messagelist.Last().victory;
+            }
+            else
+                if(messagelist.Last().ccas< messagelist.Last().wcas)
+            {
+                return 1;
+            }
+            else
+                if (messagelist.Last().wcas < messagelist.Last().ccas)
+            {
+                return 2;
+            }
+            return 3;
 
         }
         //выводит длину карты
         public int getSpan()
         {
-            return (messagelist.Last().date - messagelist.ElementAt(0).date).Hours + 1;
+               return Convert.ToInt32((messagelist.Last().date - messagelist.ElementAt(0).date).TotalHours) + 1;
+           // return ((end- start).Hours + 1);
         }
         public DateTime getStart()
         {
@@ -282,6 +298,7 @@ namespace InfoGraphic
             List<message> messagelist = new List<message>();
             String path1 = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/logs/oldlogs.txt";
             String path2 = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/logs/newlogs.txt";
+            String output = "C:/Users/777/Desktop/Foxhole Management/InfoGraphic/logs/output.txt";
             List<battle> battles = new List<battle>();
             DateTime date;
             CultureInfo provider = CultureInfo.InvariantCulture;
@@ -317,6 +334,11 @@ namespace InfoGraphic
                             {
                                 if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
                                 {
+                                    if(compare.Contains("defeated"))
+                                    {
+                                        buffer = null;
+                                        break;
+                                    }
                                     buffer.wcas = p.getWardens(compare);
                                     lines.RemoveAt(i + n);
                                     break;
@@ -327,6 +349,11 @@ namespace InfoGraphic
                             {
                                 if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
                                 {
+                                    if (compare.Contains("defeated"))
+                                    {
+                                        buffer = null;
+                                        break;
+                                    }
                                     buffer.ccas = p.getColonials(compare);
                                     lines.RemoveAt(i + n);
                                     break;
@@ -344,6 +371,11 @@ namespace InfoGraphic
                             {
                                 if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
                                 {
+                                    if (compare.Contains("defeated"))
+                                    {
+                                        buffer = null;
+                                        break;
+                                    }
                                     buffer.wcas = p.getWardens(compare);
                                     lines.RemoveAt(n);
                                     break;
@@ -354,6 +386,11 @@ namespace InfoGraphic
                             {
                                 if ((buffer.servername == p.getServer(compare)) && (buffer.mapname == p.getMap(compare)))
                                 {
+                                    if (compare.Contains("defeated"))
+                                    {
+                                        buffer = null;
+                                        break;
+                                    }
                                     buffer.ccas = p.getColonials(compare);
                                     lines.RemoveAt(n);
                                     break;
@@ -363,6 +400,7 @@ namespace InfoGraphic
                         }
                     }
                 }
+                if(buffer!=null)
                 messagelist.Add(buffer);
             }
 
@@ -469,35 +507,175 @@ namespace InfoGraphic
                     i--;
                     continue;
                 }
-                if (battles.ElementAt(i).victor == 0)
+                /* if (battles.ElementAt(i).victor == 0)
+                 {
+
+                     linecounter++;
+                     Console.WriteLine(i+" "+battles.ElementAt(i).servername+"; "+ battles.ElementAt(i).map);
+                 }
+                 */
+                if ((battles.ElementAt(i).messagelist.Last().ccas==0)&&(battles.ElementAt(i).messagelist.Last().wcas == 0)&&(battles.ElementAt(i).victor==0)) //если об игре всего одно сообщение, нахуй оно нам надо?
                 {
-                    
-                    linecounter++;
-                    Console.WriteLine(i+" "+battles.ElementAt(i).servername+"; "+ battles.ElementAt(i).map);
+                    battles.RemoveAt(i);
+                    i--;
+                    continue;
                 }
+            }
+            //Если не было сообщения о победе то ничья
+            for (int i = 0; i < battles.Count; i++)
+            {
+                if(battles.ElementAt(i).victor==0)
+                {
+                    battles.ElementAt(i).victor = battles.ElementAt(i).getvictor();
+                    battles.ElementAt(i).length = battles.ElementAt(i).getSpan();
+                }
+                battles.ElementAt(i).length = battles.ElementAt(i).getSpan();
+            }
+            int totalcolonials = 0, narrowcolonials = 0, narrowwardens = 0, narrowstalemates = 0,
+                totalwardens = 0,
+                wardenwins = 0,
+                colonialwins=0,
+                stalemates=0,
+                na=0;
+            int[,] colonialCasMap = new int[10, 2];
+            int[,] wardenCasMap = new int[10, 2];
+            int[] stalemateMap = new int[10];
+            /*
+            0.8 14.12.2017
+            0.7 22.11.2017
+            0.6 03.11.2017
+            0.5 12.11.2017
+            0.4 16.09.2017
+            0.3 30.08.2017
+            0.2 18.08.2017
+            0.1 28.07.2017         
+            */
+            //Вводим время для разбиения игр на временные отрезки (по патчам)
+            DateTime startdate;
+            DateTime enddate;
+            Console.WriteLine("С какого времени ищем?");
+            startdate =Convert.ToDateTime(Console.ReadLine());
+            Console.WriteLine("По какое время ищем?");
+            enddate = Convert.ToDateTime(Console.ReadLine());
+            if (startdate == null)
+            {
+                startdate = Convert.ToDateTime("20.10.2016");
+            }
+            if (enddate == null)
+            {
+                enddate = Convert.ToDateTime("02.02.2018");
+            }
+            string[] mapnames = {
+                "Callahan's Passage",
+                "Weathered Expanse",
+                "Farranac Coast",
+                "Deadlands",
+                "Endless Shore",
+                "Westgate",
+                "Upper Heartlands",
+                "Umbral Wildwood",
+                "Fisherman's Row",
+                 "Tempest Island" 
+            };
+
+            for (int i = 0; i < battles.Count; i++)
+            {
+                if (battles.ElementAt(i).getStart()>startdate&& battles.ElementAt(i).getStart() < enddate)
+                {
+                    int map = 0;
+                    for (int k = 0; k < 10; k++)
+                    {
+                        if (battles.ElementAt(i).map == mapnames[k])
+                            map = k;
+                    }
+                    if (battles.ElementAt(i).closs == 0)
+                    {
+                        if (battles.ElementAt(i).messagelist.Last().victory != 0)
+                        {
+                            totalcolonials += battles.ElementAt(i).messagelist.ElementAt(battles.ElementAt(i).messagelist.Count - 2).ccas;
+                            totalwardens += battles.ElementAt(i).messagelist.ElementAt(battles.ElementAt(i).messagelist.Count - 2).wcas;
+                        }
+                        else
+                        {
+                            totalcolonials += battles.ElementAt(i).messagelist.Last().ccas;
+                            totalwardens += battles.ElementAt(i).messagelist.Last().wcas;
+                        }
+                    }
+                    totalcolonials += battles.ElementAt(i).closs;
+                    totalwardens += battles.ElementAt(i).wloss;
+                    //  Console.WriteLine("Сервер:" + battles.ElementAt(i).servername + ";" + battles.ElementAt(i).map +
+                    //    " Потери колонистов: " + battles.ElementAt(i).closs + "; Потери варденов: " + battles.ElementAt(i).wloss);
+                    // if(battles.ElementAt(i).victor==1)
+                    if (battles.ElementAt(i).victor == 1)
+                    {
+                        colonialwins++;
+                        if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
+                            narrowcolonials++;
+                    }
+                    if (battles.ElementAt(i).victor == 2)
+                    {
+                        wardenwins++;
+                        if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
+                            narrowwardens++;
+                    }
+                    if (battles.ElementAt(i).victor == 3)
+                    {
+                        stalemates++;
+                        if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
+                            narrowstalemates++;
+                    }
+
+                    colonialCasMap[map, 1] += battles.ElementAt(i).closs;
+                    wardenCasMap[map, 1] += battles.ElementAt(i).wloss;
+                    switch (battles.ElementAt(i).victor)
+                    {
+                        case 1:
+                            colonialCasMap[map, 0]++;
+                            break;
+                        case 2:
+                            wardenCasMap[map, 0]++;
+                            break;
+                        case 3:
+                            stalemateMap[map]++;
+                            break;
+                    }
+                }
+            }
+            Console.WriteLine("Потери колонистов: " + totalcolonials);
+            Console.WriteLine("Потери варденов: " + totalwardens);
+            Console.WriteLine("Победы колонистов: " + colonialwins);
+            Console.WriteLine("Победы варденов: " + wardenwins);
+            Console.WriteLine("Ничьи: " + stalemates);
+            Console.WriteLine("Победы колонистов+: " + narrowcolonials);
+            Console.WriteLine("Победы варденов+: " + narrowwardens);
+            Console.WriteLine("Ничьи+: " + narrowstalemates);
+            for (int k = 0; k < 10; k++)
+            {
+                Console.Write(mapnames[k] + ";Wins: C-" + colonialCasMap[k,0]+"; W-"+ wardenCasMap[k, 0] + "; S-" + stalemateMap[k]);
+                Console.WriteLine(";Casualties C-" + colonialCasMap[k, 1] + "; W-" + wardenCasMap[k, 1]);
 
             }
-                /*
-                Console.WriteLine("Time:"+p.GetTime(lines.ElementAt(200)));
-                Console.WriteLine("Server:"+p.getServer(lines.ElementAt(200)));
-                Console.WriteLine("Map:"+p.getMap(lines.ElementAt(200)));
-                Console.WriteLine("Colonial casualties:"+p.getColonials(lines.ElementAt(200)));
-                Console.WriteLine("Warden casualties:" + p.getWardens(lines.ElementAt(200)));
-                */
-                //блок записи файла
-                /* TextWriter tw = new StreamWriter(newpath);
-                 foreach (string s in lines)
-                 {
-                     p.GetTime(s);
-                     tw.WriteLine(s);
-                     linecounter++;
+           
 
-                 }
-                 tw.WriteLine("Всего строк в файле:" + linecounter);
-                 tw.Close();
-                 */
-                //Вывод количества строк
-                Console.WriteLine("Проблемные игры:"+linecounter);
+
+            //блок записи файла
+            TextWriter tw = new StreamWriter(output);
+             foreach (battle b in battles)
+             {
+                linecounter++;
+                string victor = "";
+                if (b.victor == 1) victor = "Colonial";
+                if (b.victor == 2) victor = "Warden";
+                if (b.victor == 3) victor = "Stalemate";
+                tw.WriteLine(linecounter+". "+b.servername+ ";"+b.map+";"+victor+";"+b.length+" days;"+b.closs+";"+b.wloss);
+     
+
+             }
+             tw.WriteLine("Всего строк в файле:" + linecounter);
+             tw.Close();
+             
+            //Вывод количества строк
+            Console.WriteLine("Проблемные игры:"+linecounter);
             Console.ReadLine();
         }
 
