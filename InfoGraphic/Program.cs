@@ -418,19 +418,48 @@ namespace InfoGraphic
                 buffer.victory = p.getVictory(s);
                 messagelist.Add(buffer);
             }
-
+            //удаляем забагованные сообщения
+            for (int i = 0; i < messagelist.Count; i++)
+            {
+                message buffer = messagelist.ElementAt(i);
+                if ((i < 150) && (i > 0)) //для первых битв можно и прогнать через все битвы
+                {
+                    for (int k = messagelist.Count - 1; k >= 0; k--)
+                    {
+                        if ((messagelist.ElementAt(i).wcas == messagelist.ElementAt(k).wcas) && (messagelist.ElementAt(i).ccas == messagelist.ElementAt(k).ccas) && (messagelist.ElementAt(i).victory==0))
+                        {
+                            messagelist.RemoveAt(i);
+                            i++;
+                            break;          
+                        }
+                    }
+                }
+                if(i>150)
+                {
+                    for (int k = i - 1; k >= i - 151; k--)
+                    {
+                        if ((messagelist.ElementAt(i).wcas == messagelist.ElementAt(k).wcas) && (messagelist.ElementAt(i).ccas == messagelist.ElementAt(k).ccas) && (messagelist.ElementAt(i).victory == 0))
+                        {
+                            messagelist.RemoveAt(i);
+                            i++;
+                            break;
+                        }
+                    }
+                }
+            }
             //делит все сообщения по играм
-            for(int i=0;i<messagelist.Count;i++)
+            for (int i = 0; i < messagelist.Count; i++)
             {
                 message buffer = messagelist.ElementAt(i); //загоняем в буфер сообщение из листа
                 bool newbattle = true;
-                if ((battles.Count < 100)&&(battles.Count>0)) //для первых битв можно и прогнать через все битвы
+                if ((battles.Count < 300)&&(battles.Count>0)) //для первых битв можно и прогнать через все битвы
                 {
                 for(int k=battles.Count-1;k>=0;k--)
                     {
                         battle compare = battles.ElementAt(k);
+                        TimeSpan dateDifference = buffer.date - compare.messagelist.Last().date;
                         //если совпадает имя, карта, и потерь меньше или это победное сообщение, добавляем сообщение в конец списка
-                        if ((buffer.servername == compare.servername) && (buffer.mapname == compare.map)
+                        if ((buffer.servername == compare.servername) && (buffer.mapname == compare.map)&&(dateDifference.TotalHours<24)
                             && (compare.messagelist.Last().victory==0) && (((compare.messagelist.Last().wcas <= buffer.wcas)
                             && (compare.messagelist.Last().ccas <= buffer.ccas))||(buffer.victory!=0)))
                         {
@@ -452,13 +481,14 @@ namespace InfoGraphic
                         }
                     }
                 }
-                if (battles.Count > 100) //если битв больше чем 60 то прогоняем только через последние 60 битв
+                if (battles.Count > 300) //если битв больше чем 60 то прогоняем только через последние 60 битв
                 {
-                    for (int k = battles.Count - 1; k >= battles.Count - 101; k--)
+                    for (int k = battles.Count - 1; k >= battles.Count - 301; k--)
                     {
                         battle compare = battles.ElementAt(k);
+                        TimeSpan dateDifference = buffer.date - compare.messagelist.Last().date;
                         //если совпадает имя, карта, и потерь меньше или это победное сообщение, добавляем сообщение в конец списка
-                        if ((buffer.servername == compare.servername) && (buffer.mapname == compare.map)
+                        if ((buffer.servername == compare.servername) && (buffer.mapname == compare.map) && (dateDifference.TotalHours < 24)
                             && (compare.messagelist.Last().victory == 0) && (((compare.messagelist.Last().wcas <= buffer.wcas)
                             && (compare.messagelist.Last().ccas <= buffer.ccas)) || (buffer.victory != 0)))
                         {
@@ -544,120 +574,199 @@ namespace InfoGraphic
             0.8 14.12.2017
             0.7 22.11.2017
             0.6 03.11.2017
-            0.5 12.11.2017
+            0.5 12.10.2017
             0.4 16.09.2017
             0.3 30.08.2017
             0.2 18.08.2017
             0.1 28.07.2017         
             */
-            //Вводим время для разбиения игр на временные отрезки (по патчам)
-            DateTime startdate;
-            DateTime enddate;
-            Console.WriteLine("С какого времени ищем?");
-            startdate =Convert.ToDateTime(Console.ReadLine());
-            Console.WriteLine("По какое время ищем?");
-            enddate = Convert.ToDateTime(Console.ReadLine());
-            if (startdate == null)
-            {
-                startdate = Convert.ToDateTime("20.10.2016");
-            }
-            if (enddate == null)
-            {
-                enddate = Convert.ToDateTime("02.02.2018");
-            }
-            string[] mapnames = {
-                "Callahan's Passage",
-                "Weathered Expanse",
-                "Farranac Coast",
-                "Deadlands",
-                "Endless Shore",
-                "Westgate",
-                "Upper Heartlands",
-                "Umbral Wildwood",
-                "Fisherman's Row",
-                 "Tempest Island" 
-            };
 
-            for (int i = 0; i < battles.Count; i++)
+            //блок разбития на патчи
+            //Вводим время для разбиения игр на временные отрезки (по патчам)
+            string repeat = "y";
+            while(repeat=="y")
             {
-                if (battles.ElementAt(i).getStart()>startdate&& battles.ElementAt(i).getStart() < enddate)
+                DateTime startdate;
+                DateTime enddate;
+                Console.WriteLine("С какого времени ищем?");
+                startdate = Convert.ToDateTime(Console.ReadLine());
+                Console.WriteLine("По какое время ищем?");
+                enddate = Convert.ToDateTime(Console.ReadLine());
+                if (startdate == null)
                 {
-                    int map = 0;
-                    for (int k = 0; k < 10; k++)
+                    startdate = Convert.ToDateTime("20.10.2016");
+                }
+                if (enddate == null)
+                {
+                    enddate = Convert.ToDateTime("02.02.2018");
+                }
+                string[] mapnames = {
+                 "Callahan's Passage",
+                 "Weathered Expanse",
+                 "Farranac Coast",
+                 "Deadlands",
+                 "Endless Shore",
+                 "Westgate",
+                 "Upper Heartlands",
+                 "Umbral Wildwood",
+                 "Fisherman's Row",
+                  "Tempest Island"
+             };
+
+                for (int i = 0; i < battles.Count; i++)
+                {
+                    if (battles.ElementAt(i).getStart() > startdate && battles.ElementAt(i).getStart() < enddate)
                     {
-                        if (battles.ElementAt(i).map == mapnames[k])
-                            map = k;
-                    }
-                    if (battles.ElementAt(i).closs == 0)
-                    {
-                        if (battles.ElementAt(i).messagelist.Last().victory != 0)
+                        int map = 0;
+                        for (int k = 0; k < 10; k++)
                         {
-                            totalcolonials += battles.ElementAt(i).messagelist.ElementAt(battles.ElementAt(i).messagelist.Count - 2).ccas;
-                            totalwardens += battles.ElementAt(i).messagelist.ElementAt(battles.ElementAt(i).messagelist.Count - 2).wcas;
+                            if (battles.ElementAt(i).map == mapnames[k])
+                                map = k;
+                        }
+                        if (battles.ElementAt(i).closs == 0)
+                        {
+                            if (battles.ElementAt(i).messagelist.Last().victory != 0)
+                            {
+                                totalcolonials += battles.ElementAt(i).messagelist.ElementAt(battles.ElementAt(i).messagelist.Count - 2).ccas;
+                                totalwardens += battles.ElementAt(i).messagelist.ElementAt(battles.ElementAt(i).messagelist.Count - 2).wcas;
+                            }
+                            else
+                            {
+                                totalcolonials += battles.ElementAt(i).messagelist.Last().ccas;
+                                totalwardens += battles.ElementAt(i).messagelist.Last().wcas;
+                            }
                         }
                         else
                         {
-                            totalcolonials += battles.ElementAt(i).messagelist.Last().ccas;
-                            totalwardens += battles.ElementAt(i).messagelist.Last().wcas;
+                            totalcolonials += battles.ElementAt(i).closs;
+                            totalwardens += battles.ElementAt(i).wloss;
+                        }
+                        //  Console.WriteLine("Сервер:" + battles.ElementAt(i).servername + ";" + battles.ElementAt(i).map +
+                        //    " Потери колонистов: " + battles.ElementAt(i).closs + "; Потери варденов: " + battles.ElementAt(i).wloss);
+                        // if(battles.ElementAt(i).victor==1)
+                        if (battles.ElementAt(i).victor == 1)
+                        {
+                            colonialwins++;
+                            if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
+                                narrowcolonials++;
+                        }
+                        if (battles.ElementAt(i).victor == 2)
+                        {
+                            wardenwins++;
+                            if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
+                                narrowwardens++;
+                        }
+                        if (battles.ElementAt(i).victor == 3)
+                        {
+                            stalemates++;
+                            if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
+                                narrowstalemates++;
+                        }
+
+                        colonialCasMap[map, 1] += battles.ElementAt(i).closs;
+                        wardenCasMap[map, 1] += battles.ElementAt(i).wloss;
+                        switch (battles.ElementAt(i).victor)
+                        {
+                            case 1:
+                                colonialCasMap[map, 0]++;
+                                break;
+                            case 2:
+                                wardenCasMap[map, 0]++;
+                                break;
+                            case 3:
+                                stalemateMap[map]++;
+                                break;
                         }
                     }
-                    totalcolonials += battles.ElementAt(i).closs;
-                    totalwardens += battles.ElementAt(i).wloss;
-                    //  Console.WriteLine("Сервер:" + battles.ElementAt(i).servername + ";" + battles.ElementAt(i).map +
-                    //    " Потери колонистов: " + battles.ElementAt(i).closs + "; Потери варденов: " + battles.ElementAt(i).wloss);
-                    // if(battles.ElementAt(i).victor==1)
-                    if (battles.ElementAt(i).victor == 1)
-                    {
-                        colonialwins++;
-                        if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
-                            narrowcolonials++;
-                    }
-                    if (battles.ElementAt(i).victor == 2)
-                    {
-                        wardenwins++;
-                        if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
-                            narrowwardens++;
-                    }
-                    if (battles.ElementAt(i).victor == 3)
-                    {
-                        stalemates++;
-                        if (map < 8 && battles.ElementAt(i).closs > 500 && battles.ElementAt(i).wloss > 500)
-                            narrowstalemates++;
-                    }
+                }
+                Console.WriteLine("Потери колонистов: " + totalcolonials);
+                Console.WriteLine("Потери варденов: " + totalwardens);
+                Console.WriteLine("Победы колонистов: " + colonialwins);
+                Console.WriteLine("Победы варденов: " + wardenwins);
+                Console.WriteLine("Ничьи: " + stalemates);
+                Console.WriteLine("Победы колонистов+: " + narrowcolonials);
+                Console.WriteLine("Победы варденов+: " + narrowwardens);
+                Console.WriteLine("Ничьи+: " + narrowstalemates);
+                for (int k = 0; k < 10; k++)
+                {
+                    Console.Write(mapnames[k] + ";Wins: C-" + colonialCasMap[k, 0] + "; W-" + wardenCasMap[k, 0] + "; S-" + stalemateMap[k]);
+                    Console.WriteLine(";Casualties C-" + colonialCasMap[k, 1] + "; W-" + wardenCasMap[k, 1]);
 
-                    colonialCasMap[map, 1] += battles.ElementAt(i).closs;
-                    wardenCasMap[map, 1] += battles.ElementAt(i).wloss;
-                    switch (battles.ElementAt(i).victor)
+                }
+                repeat = Console.ReadLine();
+            }
+            
+            List<int> deathperhour = new List<int>();
+            List<int> deadliesthourindex = new List<int>();
+            int maxcasualties = 0, index = 0, maxlength = 0;
+            //больше всего смертей за час
+            /*
+            for (int i = 0; i < battles.Count; i++)
+            {
+                int maxdeaths = 0;
+                int hourindex = 0;
+                for (int k = 1; k < battles.ElementAt(i).messagelist.Count; k++)
+                {
+                    int totalcasualties = battles.ElementAt(i).messagelist.ElementAt(k).ccas + battles.ElementAt(i).messagelist.ElementAt(k).wcas;
+                    int totalcasualties2 = battles.ElementAt(i).messagelist.ElementAt(k-1).ccas + battles.ElementAt(i).messagelist.ElementAt(k-1).wcas;
+                    int difference = totalcasualties - totalcasualties2;
+                    if ((difference > maxdeaths)&&(battles.ElementAt(i).messagelist.ElementAt(k).date- battles.ElementAt(i).messagelist.ElementAt(k-1).date).TotalHours<2)
                     {
-                        case 1:
-                            colonialCasMap[map, 0]++;
-                            break;
-                        case 2:
-                            wardenCasMap[map, 0]++;
-                            break;
-                        case 3:
-                            stalemateMap[map]++;
-                            break;
+                        maxdeaths = difference;
+                        hourindex = k;
                     }
                 }
-            }
-            Console.WriteLine("Потери колонистов: " + totalcolonials);
-            Console.WriteLine("Потери варденов: " + totalwardens);
-            Console.WriteLine("Победы колонистов: " + colonialwins);
-            Console.WriteLine("Победы варденов: " + wardenwins);
-            Console.WriteLine("Ничьи: " + stalemates);
-            Console.WriteLine("Победы колонистов+: " + narrowcolonials);
-            Console.WriteLine("Победы варденов+: " + narrowwardens);
-            Console.WriteLine("Ничьи+: " + narrowstalemates);
-            for (int k = 0; k < 10; k++)
-            {
-                Console.Write(mapnames[k] + ";Wins: C-" + colonialCasMap[k,0]+"; W-"+ wardenCasMap[k, 0] + "; S-" + stalemateMap[k]);
-                Console.WriteLine(";Casualties C-" + colonialCasMap[k, 1] + "; W-" + wardenCasMap[k, 1]);
-
+                deadliesthourindex.Add(hourindex);
+                deathperhour.Add(maxdeaths);
             }
            
+            int maxperhour = 0;
+            for (int i = 0; i < deathperhour.Count; i++)
+            {
+                if(deathperhour.ElementAt(i)>maxperhour)
+                {
+                    maxperhour = deathperhour.ElementAt(i);
+                    index = i;
 
+                }
+            }
+             */
+            double maxaveragecas = 0;
+            for (int i = 0; i < battles.Count; i++)
+            {
+                double localmaxcasualties = (battles.ElementAt(i).closs- battles.ElementAt(i).messagelist.First().ccas + battles.ElementAt(i).wloss - battles.ElementAt(i).messagelist.First().wcas) / battles.ElementAt(i).length;
+                if(localmaxcasualties>maxaveragecas)
+                {
+                    maxaveragecas = localmaxcasualties;
+                    index = i;
+                }
 
+                //самая кровавая битва
+                /*int totalcasualties = battles.ElementAt(i).closs+ battles.ElementAt(i).wloss;
+                if (totalcasualties > maxcasualties)
+                {
+                    maxcasindex = i;
+                    maxcasualties = totalcasualties;
+                }*/
+                //самая долгая битва
+                /* if (battles.ElementAt(i).length > maxlength)
+                 {
+                     index = i;
+                     maxlength = battles.ElementAt(i).length;
+                 }*/
+
+            }
+            /*
+            Console.WriteLine(battles.ElementAt(index).servername);
+            Console.WriteLine(battles.ElementAt(index).map);
+            Console.WriteLine(battles.ElementAt(index).start);
+            Console.WriteLine(battles.ElementAt(index).length+" hours");
+            Console.WriteLine(battles.ElementAt(index).closs);
+            Console.WriteLine(battles.ElementAt(index).wloss);
+            Console.WriteLine(maxaveragecas);
+            //Console.WriteLine("Hour number: " + deadliesthourindex.ElementAt(index));
+            Console.WriteLine(battles.ElementAt(index).victor);
+            */
             //блок записи файла
             TextWriter tw = new StreamWriter(output);
              foreach (battle b in battles)
@@ -667,7 +776,7 @@ namespace InfoGraphic
                 if (b.victor == 1) victor = "Colonial";
                 if (b.victor == 2) victor = "Warden";
                 if (b.victor == 3) victor = "Stalemate";
-                tw.WriteLine(linecounter+". "+b.servername+ ";"+b.map+";"+victor+";"+b.length+" days;"+b.closs+";"+b.wloss);
+                tw.WriteLine(linecounter+". "+Convert.ToString(b.start)+"; "+ b.servername+ ";"+b.map+";"+victor+";"+b.length+" days;"+b.closs+";"+b.wloss);
      
 
              }
@@ -675,7 +784,7 @@ namespace InfoGraphic
              tw.Close();
              
             //Вывод количества строк
-            Console.WriteLine("Проблемные игры:"+linecounter);
+           // Console.WriteLine("Проблемные игры:"+linecounter);
             Console.ReadLine();
         }
 
